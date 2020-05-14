@@ -53,6 +53,13 @@ const PluginSQLite3Sync = {
       return db.insert(tbl, params)
     }
   },
+  'SQLITE3挿入': {// @ INSERT文を実行。TBLへハッシュPARAMSを挿入。// @SQLITE3そうにゅう
+    type: 'func',
+    josi: [['に','へ'], ['を']],
+    fn: function (tbl, params, sys) {
+      return sys.__exec('INSERT', [tbl, params, sys])
+    }
+  },
   'UPDATE': { // @ UPDATE文を実行。TBLのWHEREをPARAMSに更新。// @UPDATE
     type: 'func',
     josi: [['の'], ['を'],['に','へ']],
@@ -61,7 +68,14 @@ const PluginSQLite3Sync = {
       const db = sys.__sqlite3db
       return db.update(tbl, params, where)
     }
-  }
+  },
+  'SQLITE3更新': {// @ UPDATE文を実行。TBLのWHEREをPARAMSに更新。// @SQLITE3こうしん
+    type: 'func',
+    josi: [['の'], ['を'],['に','へ']],
+    fn: function (tbl, where, params, sys) {
+      return sys.__exec('UPDATE', [tbl, where, params, sys])
+    }
+  },
 }
 
 module.exports = PluginSQLite3Sync

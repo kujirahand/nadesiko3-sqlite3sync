@@ -36,26 +36,35 @@ describe('sqlite3sync_test', () => {
     const sqlInsert = 'INSERT INTO tt (key,iv)VALUES("a",10);'
     const sqlSelect = 'SELECT * FROM tt;'
     cmp(`『${fname}』をSQLITE3開く\n` +
-      `『${sqlCreate}』をSQLITE3実行。\n` +
-      `『${sqlInsert}』をSQLITE3実行。\n` +
-      `R=『${sqlSelect}』をSQLITE3実行。\n` +
+      `『${sqlCreate}』を[]でSQLITE3実行。\n` +
+      `「DELETE FROM tt」を[]でSQLITE3実行。\n` +
+      `『${sqlInsert}』を[]でSQLITE3実行。\n` +
+      `R=『${sqlSelect}』を[]でSQLITE3実行。\n` +
       `R[0]['iv']を表示。`, 10)
   })
   
   it('SQLite3Sync - INSERT', () => {
-    const sqlSelect = 'SELECT * FROM tt WHERE key="b";'
+    const sqlSelect = 'SELECT * FROM tt WHERE key=?;'
     cmp(`『${fname}』をSQLITE3開く\n` +
       `「tt」へ{"key":"b","iv":30}をINSERT。\n` +
-      `R=『${sqlSelect}』をSQLITE3実行。\n` +
+      `R=『${sqlSelect}』を["b"]でSQLITE3実行。\n` +
       `R[0]['iv']を表示。`, 30)
+    cmp(`『${fname}』をSQLITE3開く\n` +
+      `「tt」へ{"key":"c","iv":50}をSQLITE3挿入。\n` +
+      `R=『${sqlSelect}』を["c"]でSQLITE3実行。\n` +
+      `R[0]['iv']を表示。`, 50)
   })
   
   it('SQLite3Sync - UPDATE', () => {
-    const sqlSelect = 'SELECT * FROM tt WHERE tt_id=3;'
+    const sqlSelect = 'SELECT * FROM tt WHERE tt_id=?;'
     cmp(`『${fname}』をSQLITE3開く\n` +
-      `「tt」の{"tt_id":3}を{"iv":50}へUPDATE。\n` +
-      `R=『${sqlSelect}』をSQLITE3実行。\n` +
+      `「tt」の{"tt_id":1}を{"iv":50}へUPDATE。\n` +
+      `R=『${sqlSelect}』を[1]でSQLITE3実行。\n` +
       `R[0]['iv']を表示。`, 50)
+    cmp(`『${fname}』をSQLITE3開く\n` +
+      `「tt」の{"tt_id":1}を{"iv":500}へSQLITE3更新。\n` +
+      `R=『${sqlSelect}』を[1]でSQLITE3実行。\n` +
+      `R[0]['iv']を表示。`, 500)
   })
 })
 
