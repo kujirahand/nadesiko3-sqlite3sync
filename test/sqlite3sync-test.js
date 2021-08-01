@@ -55,6 +55,19 @@ describe('sqlite3sync_test', () => {
       `R[0]['iv']を表示。`, 50)
   })
   
+  it('SQLite3Sync - INSERT2', () => {
+    const sqlSelect = 'SELECT * FROM tt WHERE key=?;'
+    cmp(`『${fname}』をSQLITE3開く\n` +
+      `「tt」へ{"key":"g","iv":50}をINSERT。\n` +
+      `「tt」へ{"key":"h","iv":60}をINSERT。\n` +
+      `「tt」へ{"key":"i","iv":70}をINSERT。\n` +
+      `R=『SELECT * FROM tt WHERE key=?』を["g"]でSQLITE3実行。\n` +
+      `R[0]['iv']を表示。`, 50)
+    cmp(`『${fname}』をSQLITE3開く\n` +
+      `R=『SELECT * FROM tt WHERE key=?』を["h"]でSQLITE3実行。\n` +
+      `R[0]['iv']を表示。`, 60)
+  })
+  
   it('SQLite3Sync - UPDATE', () => {
     const sqlSelect = 'SELECT * FROM tt WHERE tt_id=?;'
     cmp(`『${fname}』をSQLITE3開く\n` +
