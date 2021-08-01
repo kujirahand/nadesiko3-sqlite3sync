@@ -1,6 +1,6 @@
 {
   "name": "nadesiko3-sqlite3sync",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Nadesiko3 plugins for SQLite(Sync)",
   "main": "nadesiko3-sqlite3sync.js",
   "scripts": {

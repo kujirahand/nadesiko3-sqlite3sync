@@ -1,4 +1,4 @@
-// plugin_sqlite3sync.js
+// nadesiko3-sqlite3sync.js
 const sqlite3 = require('sqlite-sync')
 const ERR_OPEN_DB = '『SQLITE3同期開』でデータベースを開く必要があります。'
 const PluginSQLite3Sync = {
@@ -39,9 +39,12 @@ const PluginSQLite3Sync = {
     type: 'func',
     josi: [['を'], ['で']],
     fn: function (sql, params, sys) {
-      if (!sys.__sqlite3db) throw new Error(ERR_OPEN_DB)
       const db = sys.__sqlite3db
-      return db.run(sql, params)
+      const res = db.run(sql, params)
+      if (res && res.error) {
+        throw new Error("実行に失敗:" + sql)
+      }
+      return res
     }
   },
   'INSERT': { // @ INSERT文を実行。TBLへハッシュPARAMSを挿入。// @INSERT
@@ -50,7 +53,11 @@ const PluginSQLite3Sync = {
     fn: function (tbl, params, sys) {
       if (!sys.__sqlite3db) throw new Error(ERR_OPEN_DB)
       const db = sys.__sqlite3db
-      return db.insert(tbl, params)
+      const res = db.insert(tbl, params)
+      if (res && res.error) {
+        throw new Error("実行に失敗:" + sql)
+      }
+      return res
     }
   },
   'SQLITE3挿入': {// @ INSERT文を実行。TBLへハッシュPARAMSを挿入。// @SQLITE3そうにゅう
@@ -66,7 +73,11 @@ const PluginSQLite3Sync = {
     fn: function (tbl, where, params, sys) {
       if (!sys.__sqlite3db) throw new Error(ERR_OPEN_DB)
       const db = sys.__sqlite3db
-      return db.update(tbl, params, where)
+      const res = db.update(tbl, params, where)
+      if (res && res.error) {
+        throw new Error("実行に失敗:" + sql)
+      }
+      return res
     }
   },
   'SQLITE3更新': {// @ UPDATE文を実行。TBLのWHEREをPARAMSに更新。// @SQLITE3こうしん
