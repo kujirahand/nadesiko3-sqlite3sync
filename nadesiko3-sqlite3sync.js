@@ -1,7 +1,7 @@
-// nadesiko3-sqlite3sync.js
-const sqlite3 = require('sqlite-sync')
-const ERR_OPEN_DB = '『SQLITE3同期開』でデータベースを開く必要があります。'
-const PluginSQLite3Sync = {
+// plugin_sqlite3.js
+import sqlite3 from 'sqlite3'
+const ERR_OPEN_DB = 'SQLITE3の命令を使う前に『SQLITE3開く』でデータベースを開いてください。';
+const PluginSQLite3 = {
   '初期化': {
     type: 'func',
     josi: [],
@@ -9,12 +9,13 @@ const PluginSQLite3Sync = {
       sys.__sqlite3db = null
     }
   },
-  // @SQLite3同期
-  'SQLITE3開': { // @SQlite3のデータベースFを開いて、データベースオブジェクトを返す // @SQLITE3ひらく
+  // @SQLite3
+  'SQLITE3今挿入ID': { type: 'const', value: '?' }, // @SQLITE3いまそうにゅうID
+  'SQLITE3開': { // @SQlite3のデータベースを開いて、データベースオブジェクトを返す // @SQLITE3ひらく
     type: 'func',
     josi: [['を', 'の']],
-    fn: function (f, sys) {
-      const db = sqlite3.connect(f)
+    fn: function (s, sys) {
+      const db = new sqlite3.Database(s)
       sys.__sqlite3db = db
       return db
     }
@@ -27,7 +28,7 @@ const PluginSQLite3Sync = {
     },
     return_none: true
   },
-  'SQLITE3同期切替': { // @操作対象のデータベースをDB(『SQLITE3同期開』を使用)に切り替える // @SQLITE3どうききりかえる
+  'SQLITE3切替': { // @アクティブなSQlite3のデータベースをDB(SQLITE3開くで開いたもの)に切り替える // @SQLITE3きりかえる
     type: 'func',
     josi: [['に', 'へ']],
     fn: function (db, sys) {
@@ -35,59 +36,170 @@ const PluginSQLite3Sync = {
     },
     return_none: true
   },
-  'SQLITE3実行': { // @ SQLをパラメータPARAMSで実行する。// @SQLITE3じっこう
+  'SQLITE3実行時': { // @ SQLをパラメータPARAMSで実行する。完了するとコールバック関数Fを実行する。 // @SQLITE3じっこうしたとき
+    type: 'func',
+    josi: [['に'], ['を'], ['で']],
+    fn: function (f, sql, params, sys) {
+      if (!sys.__sqlite3db) throw new Error(ERR_OPEN_DB)
+      const db = sys.__sqlite3db
+      db.run(sql, params, function (err) {
+        if (err) throw new Error('SQLITE3実行時のエラー『' + sql + '』' + err.message)
+        sys.__v0['SQLITE3今挿入ID'] = this.lastID
+        f()
+      })
+    }
+  },
+  'SQLITE3取得時': { // @ SQLをパラメータPARAMSで取得実行する。完了するとコールバック関数Fが実行され、結果は第一引数に与えられる。 // @SQLITE3しゅとくしたとき
+    type: 'func',
+    josi: [['に'], ['を'], ['で']],
+    fn: function (f, sql, params, sys) {
+      if (!sys.__sqlite3db) throw new Error(ERR_OPEN_DB)
+      const db = sys.__sqlite3db
+      db.all(sql, params, (err, rows) => {
+        if (err) throw err
+        f(rows)
+      })
+    }
+  },
+  'SQLITE3実行': { // @ SQLをパラメータPARAMSで実行する。 // @SQLITE3じっこう
+    type: 'func',
+    josi: [['を'], ['で']],
+    asyncFn: true,
+    fn: function (sql, params, sys) {
+      return new Promise((resolve, reject) => {
+        if (!sys.__sqlite3db) {
+          reject(ERR_OPEN_DB)
+          return
+        }
+        const db = sys.__sqlite3db
+        db.run(sql, params, function (err) {
+          if (err) {
+            console.log('[ERROR]', sql, err)
+            reject(err)
+            return
+          }
+          if (this.lastID) {
+            sys.__v0['SQLITE3今挿入ID'] = this.lastID
+          }
+          // console.log(sql, params, err)
+          resolve()
+        })
+      })
+    },
+    return_none: true
+  },
+  'SQLITE3取得': { // @ SQLをパラメータPARAMSで取得する。 // @SQLITE3しゅとく
+    type: 'func',
+    josi: [['を'], ['で']],
+    asyncFn: true,
+    fn: function (sql, params, sys) {
+      return new Promise((resolve, reject) => {
+        if (!sys.__sqlite3db) {
+          reject(ERR_OPEN_DB)
+          return
+        }
+        const db = sys.__sqlite3db
+        db.get(sql, params, (err, row) => {
+          if (err) {
+            reject(err)
+            return
+          }
+          resolve(row)
+        })
+      })
+    },
+    return_none: false
+  },
+  'SQLITE3全取得': { // @ SQLをパラメータPARAMSで全部取得する。 // @SQLITE3ぜんしゅとく
+    type: 'func',
+    josi: [['を'], ['で']],
+    asyncFn: true,
+    fn: function (sql, params, sys) {
+      return new Promise((resolve, reject) => {
+        if (!sys.__sqlite3db) {
+          reject(ERR_OPEN_DB)
+          return
+        }
+        const db = sys.__sqlite3db
+        db.all(sql, params, (err, rows) => {
+          if (err) {
+            reject(err)
+            return
+          }
+          resolve(rows)
+        })
+      })
+    },
+    return_none: false
+  },
+  // @非推奨
+  'SQLITE3逐次実行': { // @(非推奨) 逐次実行構文にて、SQLとパラメータPARAMSでSQLを実行し、変数『対象』に結果を得る。 // @SQLITE3ちくじじっこう
     type: 'func',
     josi: [['を'], ['で']],
     fn: function (sql, params, sys) {
-      const db = sys.__sqlite3db
-      const res = db.run(sql, params)
-      if (res && res.error) {
-        throw new Error("実行に失敗:" + sql)
-      }
-      return res
-    }
+      if (!sys.resolve) throw new Error('『SQLITE3実行』は『逐次実行』構文で使ってください。')
+      sys.resolveCount++
+      const resolve = sys.resolve
+      const reject = sys.reject
+      if (!sys.__sqlite3db) throw new Error(ERR_OPEN_DB)
+      sys.__sqlite3db.run(sql, params, function (err, res) {
+        if (err) {
+          reject('SQLITE3逐次実行のエラー『' + sql + '』' + err.message)
+          return
+        }
+        sys.__v0['対象'] = res
+        sys.__v0['SQLITE3今挿入ID'] = this.lastID
+        resolve()
+      })
+    },
+    return_none: true
   },
-  'INSERT': { // @ INSERT文を実行。TBLへハッシュPARAMSを挿入。// @INSERT
+  'SQLITE3逐次全取得': { // @(非推奨)逐次実行構文内で、SQLとパラメータPARAMSでSQLを実行して結果を得る。 // @SQLITE3ちくじぜんしゅとく
     type: 'func',
-    josi: [['に','へ'], ['を']],
-    fn: function (tbl, params, sys) {
+    josi: [['を'], ['で']],
+    fn: function (sql, params, sys) {
+      if (!sys.resolve) throw new Error('『SQLITE3全取得』は『逐次実行』構文で使ってください。')
+      sys.resolveCount++
+      const resolve = sys.resolve
+      const reject = sys.reject
       if (!sys.__sqlite3db) throw new Error(ERR_OPEN_DB)
       const db = sys.__sqlite3db
-      const res = db.insert(tbl, params)
-      if (res && res.error) {
-        throw new Error("実行に失敗:" + sql)
-      }
-      return res
-    }
+      db.all(sql, params, function (err, res) {
+        if (err) {
+          reject('SQLITE3全取得のエラー『' + sql + '』' + err.message)
+          return
+        }
+        sys.__v0['対象'] = res
+        sys.__v0['SQLITE3今挿入ID'] = this.lastID
+        resolve(res)
+      })
+    },
+    return_none: true
   },
-  'SQLITE3挿入': {// @ INSERT文を実行。TBLへハッシュPARAMSを挿入。// @SQLITE3そうにゅう
+  'SQLITE3逐次取得': { // @(非推奨)逐次実行構文内で、SQLとパラメータPARAMSでSQLを実行して結果を得る。 // @SQLITE3ちくじしゅとく
     type: 'func',
-    josi: [['に','へ'], ['を']],
-    fn: function (tbl, params, sys) {
-      return sys.__exec('INSERT', [tbl, params, sys])
-    }
-  },
-  'UPDATE': { // @ UPDATE文を実行。TBLのWHEREをPARAMSに更新。// @UPDATE
-    type: 'func',
-    josi: [['の'], ['を'],['に','へ']],
-    fn: function (tbl, where, params, sys) {
+    josi: [['を'], ['で']],
+    fn: function (sql, params, sys) {
+      if (!sys.resolve) throw new Error('『SQLITE3取得』は『逐次実行』構文で使ってください。')
+      sys.resolveCount++
+      const resolve = sys.resolve
+      const reject = sys.reject
       if (!sys.__sqlite3db) throw new Error(ERR_OPEN_DB)
       const db = sys.__sqlite3db
-      const res = db.update(tbl, params, where)
-      if (res && res.error) {
-        throw new Error("実行に失敗:" + sql)
-      }
-      return res
-    }
-  },
-  'SQLITE3更新': {// @ UPDATE文を実行。TBLのWHEREをPARAMSに更新。// @SQLITE3こうしん
-    type: 'func',
-    josi: [['の'], ['を'],['に','へ']],
-    fn: function (tbl, where, params, sys) {
-      return sys.__exec('UPDATE', [tbl, where, params, sys])
-    }
-  },
+      db.get(sql, params, function (err, res) {
+        if (err) {
+          reject('SQLITE3取得のエラー『' + sql + '』' + err.message)
+          return
+        }
+        sys.__v0['対象'] = res
+        resolve(res)
+      })
+    },
+    return_none: true
+  }
 }
 
-module.exports = PluginSQLite3Sync
+export default PluginSQLite3
+
+// module.exports = PluginSQLite3
 

@@ -1,6 +1,6 @@
 {
   "name": "nadesiko3-sqlite3sync",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "Nadesiko3 plugins for SQLite(Sync)",
   "main": "nadesiko3-sqlite3sync.js",
   "scripts": {
@@ -17,10 +17,10 @@
   },
   "homepage": "https://github.com/kujirahand/nadesiko3-sqlite3sync#readme",
   "dependencies": {
-    "sqlite-sync": "^0.3.9"
+    "sqlite3": "^5.1.6"
   },
   "devDependencies": {
     "mocha": "^9.0.0",
-    "nadesiko3": "^3.2.14"
+    "nadesiko3": "^3.6.6"
   }
 }
